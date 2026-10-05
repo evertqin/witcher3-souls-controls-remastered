@@ -1,0 +1,15 @@
+{
+  "InputVersion": 60,
+  "GameVersion": "5.00c",
+  "VanillaUiSha256": "1e61ddcf0d7c55828b104294afc15e976dbfabe9b738c6f159a552c47097b059",
+  "Profiles": {
+    "Current": {
+      "InputSha256": "f337f6595789cf3778def22fabe60ced2f24972efa5ee627c19f77dff04f7def",
+      "UiSha256": "0c187a5ac9c35b64ba647b485fb26afdf7f6c74fe65c69609713aac062b46ebe"
+    },
+    "Alt1": {
+      "InputSha256": "5ff4f02a0873bf63e6bbc9a9209cb89fd6f269332399418e2a3a290dd3779beb",
+      "UiSha256": "3fbefaddeb72ec7f4efa9e6c425818139858500f0db929a122ca4de194d78409"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+launcher-settings.json
+control-scheme-backups/
+dist/
+*.zip
+*.tmp
+*.bak

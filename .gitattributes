@@ -1,0 +1,2 @@
+# Preserve exact scheme bytes: compatibility.json hashes must survive checkout.
+* -text
