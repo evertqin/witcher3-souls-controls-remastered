@@ -1,11 +1,12 @@
 #Requires -Version 5.1
 [CmdletBinding()]
-param([string]$OutputPath = (Join-Path $PSScriptRoot 'dist'))
+param([string]$OutputPath)
 
 $ErrorActionPreference = 'Stop'
+if (-not $OutputPath) { $OutputPath = Join-Path $PSScriptRoot 'dist' }
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$releaseName = 'Dark_Souls_Controls_and_Controller_Diagram_Remastered-1.1.0.zip'
+$releaseName = 'Dark_Souls_Controls_and_Controller_Diagram_Remastered-1.1.1.zip'
 $manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'control-schemes\compatibility.json') -Raw | ConvertFrom-Json
 $entries = @('README.md', 'Start-Witcher3.cmd', 'Choose-Controls.ps1', 'control-schemes/compatibility.json')
 foreach ($scheme in @('Current', 'Alt1')) {

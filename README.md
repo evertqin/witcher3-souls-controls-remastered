@@ -1,6 +1,6 @@
 # Dark Souls Controls and Controller Diagram — Current + Alt1
 
-Version: 1.1.0  
+Version: 1.1.1  
 Prepared: October 4, 2026  
 Target: The Witcher 3: Wild Hunt — Remastered, Windows PC v5.00c (Steam)  
 Input format: Version=60
@@ -103,6 +103,12 @@ Before each switch, the launcher saves existing active files under:
 - `input.settings`: previous active bindings, if present.
 - `igmUtilities.ws`: previous active controller diagram script, if present.
 
+For OneDrive-managed files, or files that allow writing but prevent replacement,
+the launcher overwrites the existing file under an exclusive write lock. This
+preserves its file identity and permissions. Other existing files use atomic
+replacement. Both methods verify the installed bytes and keep the backups above.
+An interrupted overwrite, such as a power loss, may require manual recovery.
+
 If a switch fails after changing one file, the launcher attempts to restore the
 previous files and does not start the game. Close the game before restoring a
 backup manually. Copy the binding backup to Documents and the diagram backup to
@@ -138,6 +144,9 @@ artwork. Tutorial illustrations/text are outside this package's scope.
 - Missing/changed scheme payload: extract an intact package again.
 - Read-only or locked destination: close the game/editor and remove read-only
   from the destination file if you previously set it.
+- "Unable to remove the file to be replaced": use version 1.1.1 or newer, which
+  supports OneDrive files and writable files that cannot be replaced. If a write
+  still fails, the error identifies the destination; close any app holding it.
 - Windows Documents detection needs an override: use -DocumentsPath with the
   full path to the actual The Witcher 3 settings folder.
 
@@ -181,6 +190,9 @@ in the launcher. Both schemes retain the shared Souls-style combat bindings.
   applying each scheme, matching diagram installation, exact backups, rollback
   after a locked diagram, temporary-file cleanup, and refusal for a running game,
   incompatible input/UI format, or changed scheme payload.
+- Version 1.1.1 also reproduces replacement failure using denied delete
+  permissions and verifies overwrite fallback, unchanged permissions, cloud-file
+  truncation, locked-file refusal, and rollback after a cloud-file overwrite.
 - The original custom bindings survived a game rewrite. Alt1 riding behavior and
   the updated diagram appearance still require in-game testing.
 

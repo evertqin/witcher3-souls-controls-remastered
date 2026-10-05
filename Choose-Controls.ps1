@@ -54,6 +54,55 @@ function Assert-GameClosed {
     }
 }
 
+function Write-ExistingSchemeFile($Entry, [ref]$Applied) {
+    # Keep the existing file's identity/permissions for OneDrive and folders
+    # where writing is allowed but deleting/replacing a file is not.
+    $sourceStream = [IO.File]::OpenRead($Entry.Staged)
+    try {
+        $destinationStream = [IO.File]::Open($Entry.Destination, [IO.FileMode]::Open, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        try {
+            # Record it before the first write so a partial write is rolled back.
+            $Applied.Value += $Entry
+            $sourceStream.CopyTo($destinationStream)
+            $destinationStream.SetLength($sourceStream.Length)
+            $destinationStream.Flush($true)
+        }
+        finally { $destinationStream.Dispose() }
+    }
+    finally { $sourceStream.Dispose() }
+}
+
+function Install-SchemeFile($Entry, [ref]$Applied) {
+    try {
+        if (-not $Entry.Existed) {
+            [IO.File]::Move($Entry.Staged, $Entry.Destination)
+            $Applied.Value += $Entry
+        }
+        elseif ((Get-Item -LiteralPath $Entry.Destination).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            Write-ExistingSchemeFile $Entry $Applied
+        }
+        else {
+            try {
+                [IO.File]::Replace($Entry.Staged, $Entry.Destination, [NullString]::Value)
+                $Applied.Value += $Entry
+            }
+            catch {
+                $failure = $_.Exception
+                while ($failure.InnerException) { $failure = $failure.InnerException }
+                $windowsError = $failure.HResult -band 0xffff
+                # Only retry unsupported replacement/delete failures, and only
+                # if Replace left the original destination and staged file intact.
+                if ($windowsError -notin @(5, 50, 1175) -or
+                    -not (Test-Path -LiteralPath $Entry.Staged) -or
+                    -not (Test-Path -LiteralPath $Entry.Destination) -or
+                    (Get-FileHash -LiteralPath $Entry.Destination).Hash -ne $Entry.OriginalHash) { throw }
+                Write-ExistingSchemeFile $Entry $Applied
+            }
+        }
+    }
+    catch { throw "Could not install '$($Entry.Destination)': $($_.Exception.Message)" }
+}
+
 try {
     Assert-GameClosed
     $savedSettings = $null
@@ -150,7 +199,10 @@ try {
     try {
         [void][IO.Directory]::CreateDirectory($backupPath)
         foreach ($entry in $entries) {
-            if ($entry.Existed) { Copy-Item -LiteralPath $entry.Destination -Destination $entry.Backup }
+            if ($entry.Existed) {
+                Copy-Item -LiteralPath $entry.Destination -Destination $entry.Backup
+                $entry.OriginalHash = (Get-FileHash -LiteralPath $entry.Backup).Hash
+            }
             [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($entry.Destination))
             $entry.Staged = $entry.Destination + '.scheme-' + $transactionId + '.tmp'
             Copy-Item -LiteralPath $entry.Source -Destination $entry.Staged
@@ -160,9 +212,7 @@ try {
         }
         Assert-GameClosed
         foreach ($entry in $entries) {
-            if ($entry.Existed) { [IO.File]::Replace($entry.Staged, $entry.Destination, [NullString]::Value) }
-            else { [IO.File]::Move($entry.Staged, $entry.Destination) }
-            $applied += $entry
+            Install-SchemeFile $entry ([ref]$applied)
             if ((Get-FileHash -LiteralPath $entry.Destination -Algorithm SHA256).Hash -ne $entry.Hash) {
                 throw 'Installed scheme failed verification.'
             }
